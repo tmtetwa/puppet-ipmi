@@ -26,11 +26,22 @@ define ipmi::user (
     default: {fail('invalid privilege level specified')}
   }
 
+#exec { ""
+#      unless  => "/usr/bin/test -z "$(mc-config --diff -e User${user_id}:Enable_User${user_id}=No)"",
+#      notify  => {"Nothig to do:"}
+#    }
+##  {
 
   if ($ensure == present)
     {
-      exec { "ipmi_user_enable_${title}":
-        command     => "/usr/bin/ipmitool user enable ${user_id}",
+  #    exec { "ipmi_user_enable_${title}":
+  #      unless     => "/usr/bin/test -z "$(bmc-config --diff -e User${user_id}:Enable_User${user_id}=No)"",
+  #      notify      => "Nothing to do:",
+  #    }
+
+      exec { "ipmi_user_enable_User${user_id}":
+        command     => "/usr/bin/ipmitool user enable User${user_id}",
+        unless     => "/usr/bin/test -z mc-config --diff -e User${user_id}:Enable_User${user_id}=No",
         refreshonly => true,
         }
 
@@ -43,13 +54,13 @@ define ipmi::user (
       exec { "ipmi_user_priv_${title}":
         command => "/usr/bin/ipmitool user priv ${user_id} ${priv} 1",
         unless  => "/usr/bin/test \"$(ipmitool user list 1 | grep '^${user_id}' | awk '{print \$6}')\" = ${privilege}",
-        notify  => [Exec["ipmi_user_enable_${title}"], Exec["ipmi_user_enable_sol_${title}"], Exec["ipmi_user_channel_setaccess_${title}"]],
+        #notify  => [Exec["ipmi_user_enable_${title}"], Exec["ipmi_user_enable_sol_${title}"], Exec["ipmi_user_channel_setaccess_${title}"]],
         }
 
       exec { "ipmi_user_setpw_${title}":
         command => "/usr/bin/ipmitool user set password ${user_id} \'${password}\'",
         unless  => "/usr/bin/ipmitool user test ${user_id} 16 \'${password}\'",
-        notify  => [Exec["ipmi_user_enable_${title}"], Exec["ipmi_user_enable_sol_${title}"], Exec["ipmi_user_channel_setaccess_${title}"]],
+        #notify  => [Exec["ipmi_user_enable_${title}"], Exec["ipmi_user_enable_sol_${title}"], Exec["ipmi_user_channel_setaccess_${title}"]],
         }
 
       exec { "ipmi_user_enable_sol_${title}":
@@ -66,39 +77,42 @@ define ipmi::user (
     {
       exec { "ipmi_user_enable_nouser":
         command     => "/usr/bin/ipmitool user enable ${user_id}",
-        refreshonly => false,
+        unless     => "/usr/bin/test -z mc-config --diff -e User${user_id}:Enable_User${user_id}=No",
+        refreshonly => true,
         }
 
       exec { "ipmi_user_add_username-nouser":
         command => "/usr/bin/ipmitool user set name ${user_id} nouser",
         unless  => "/usr/bin/test \"$(ipmitool user list 1 | grep '^${user_id}' | awk '{print \$2}')\" = \"nouser\"",
-        notify  => [Exec["ipmi_user_priv_nouser"], Exec["ipmi_user_setpw_nopw"]],
+      #  notify  => [Exec["ipmi_user_priv_nouser"], Exec["ipmi_user_setpw_nopw"]],
         }
 
       exec { "ipmi_user_setpw_nopw":
         command => "/usr/bin/ipmitool user set password ${user_id} \''",
         unless  => "/usr/bin/ipmitool user test ${user_id} 16 \''",
-        notify  => [Exec["ipmi_user_enable_nouser"], Exec["ipmi_user_enable_sol_nouser"], Exec["ipmi_user_channel_setaccess_nouser"]],
+    #    notify  => [Exec["ipmi_user_enable_nouser"], Exec["ipmi_user_enable_sol_nouser"], Exec["ipmi_user_channel_setaccess_nouser"]],
         }
 
         exec { "ipmi_user_priv_nouser":
           command => "/usr/bin/ipmitool user priv ${user_id} $priv 1",
           unless  => "/usr/bin/test \"$(ipmitool user list 1 | grep '^${user_id}' | awk '{print \$6}')\" = ${privilege}",
-          notify  => [Exec["ipmi_user_enable_nouser"], Exec["ipmi_user_enable_sol_nouser"], Exec["ipmi_user_channel_setaccess_nouser"]],
+        #  notify  => [Exec["ipmi_user_enable_nouser"], Exec["ipmi_user_enable_sol_nouser"], Exec["ipmi_user_channel_setaccess_nouser"]],
           }
 
         exec { "ipmi_user_enable_sol_nouser":
           command     => "/usr/bin/ipmitool sol payload enable 1 ${user_id}",
-          refreshonly => false,
+          refreshonly => true,
           }
 
         exec { "ipmi_user_channel_setaccess_nouser":
           command     => "/usr/bin/ipmitool channel setaccess 1 ${user_id} callin=off ipmi=on link=off privilege=$prive",
-          refreshonly => false,
+          refreshonly => true,
         }
       }
     else
       {
         notify { "Error occured, not allowed execution": }
       }
+
+
   }
