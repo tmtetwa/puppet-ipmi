@@ -26,18 +26,9 @@ define ipmi::user (
     default: {fail('invalid privilege level specified')}
   }
 
-#exec { ""
-#      unless  => "/usr/bin/test -z "$(mc-config --diff -e User${user_id}:Enable_User${user_id}=No)"",
-#      notify  => {"Nothig to do:"}
-#    }
-##  {
-
   if ($ensure == present)
     {
-  #    exec { "ipmi_user_enable_${title}":
-  #      unless     => "/usr/bin/test -z "$(bmc-config --diff -e User${user_id}:Enable_User${user_id}=No)"",
-  #      notify      => "Nothing to do:",
-  #    }
+  
 
       exec { "ipmi_user_enable_User${user_id}":
         command     => "/usr/bin/ipmitool user enable User${user_id}",
@@ -48,7 +39,7 @@ define ipmi::user (
       exec { "ipmi_user_add_${title}":
         command => "/usr/bin/ipmitool user set name ${user_id} ${user}",
         unless  => "/usr/bin/test \"$(ipmitool user list 1 | grep '^${user_id}' | awk '{print \$2}')\" = \"${user}\"",
-        notify  => [Exec["ipmi_user_priv_${title}"], Exec["ipmi_user_setpw_${title}"]],
+       # notify  => [Exec["ipmi_user_priv_${title}"], Exec["ipmi_user_setpw_${title}"]],
         }
 
       exec { "ipmi_user_priv_${title}":
