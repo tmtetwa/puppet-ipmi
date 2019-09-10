@@ -1,6 +1,8 @@
  # == Defined resource type: ipmi::user
 #
 
+
+
 define ipmi::user (
   $password,
   $user = 'root',
